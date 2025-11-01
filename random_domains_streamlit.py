@@ -4,6 +4,7 @@ import json
 import re
 from typing import Dict, List, Tuple
 
+# --- Загрузка данных ---
 @st.cache_data
 def load_countries(path: str = "countries.json") -> Dict[str, Dict[str, List[str]]]:
     with open(path, "r", encoding="utf-8") as f:
@@ -11,6 +12,7 @@ def load_countries(path: str = "countries.json") -> Dict[str, Dict[str, List[str
 
 COUNTRIES = load_countries()
 
+# --- Вспомогательные функции ---
 _WEIGHT_RE = re.compile(r"\((\d+)\)")
 
 def extract_weight(label: str) -> int:
@@ -23,7 +25,7 @@ def list_weights_for_blocks(blocks: List[str]) -> List[int]:
 def choose_blocks(blocks: Dict[str, List[str]], *, rng: random.Random) -> List[str]:
     labels = list(blocks.keys())
     weights = list_weights_for_blocks(labels)
-    k = rng.randint(3, 4)
+    k = rng.randint(5, 7)
     return random.sample(labels, k=k)
 
 def pick_domains(pool: List[str], *, rng: random.Random) -> List[str]:
@@ -31,28 +33,27 @@ def pick_domains(pool: List[str], *, rng: random.Random) -> List[str]:
     k = min(count, len(pool))
     return rng.sample(pool, k)
 
-def generate_for_country(country: str) -> List[Tuple[str, List[str]]]:
+def generate_for_country(country: str) -> List[str]:
+    """Возвращает единый список доменов для выбранной страны."""
     rng = random.Random()
     blocks = COUNTRIES[country]
     chosen_blocks = choose_blocks(blocks, rng=rng)
-    result = []
+    all_domains = []
     for b in chosen_blocks:
-        result.append((b, pick_domains(blocks[b], rng=rng)))
-    return result
+        all_domains.extend(pick_domains(blocks[b], rng=rng))
+    return all_domains
 
-
+# --- Streamlit UI ---
 st.set_page_config(page_title="🎲 Генератор доменов", layout="centered")
 
 st.title("🎲 Генератор доменов по странам")
-st.markdown("Выберите страну и получите случайные домены из разных тематических блоков.")
+st.markdown("Выберите страну и получите случайные домены из разных тематических блоков, собранные в один итоговый список.")
 
 country = st.selectbox("🌍 Выберите страну:", list(COUNTRIES.keys()))
 
 if st.button("Сгенерировать"):
-    items = generate_for_country(country)
-    for block, domains in items:
-        st.subheader(block)
-        st.code("\n".join(domains))
+    domains = generate_for_country(country)
+    st.subheader(f"Итоговые домены для {country}:")
+    st.code("\n".join(domains))
 else:
     st.info("👆 Выберите страну и нажмите **Сгенерировать**.")
-
