@@ -4,7 +4,6 @@ import json
 import re
 from typing import Dict, List, Tuple
 
-# --- Загрузка данных ---
 @st.cache_data
 def load_countries(path: str = "countries.json") -> Dict[str, Dict[str, List[str]]]:
     with open(path, "r", encoding="utf-8") as f:
@@ -12,7 +11,6 @@ def load_countries(path: str = "countries.json") -> Dict[str, Dict[str, List[str
 
 COUNTRIES = load_countries()
 
-# --- Вспомогательные функции ---
 _WEIGHT_RE = re.compile(r"\((\d+)\)")
 
 def extract_weight(label: str) -> int:
@@ -33,6 +31,14 @@ def pick_domains(pool: List[str], *, rng: random.Random) -> List[str]:
     k = min(count, len(pool))
     return rng.sample(pool, k)
 
+def normalize_url(url: str) -> str:
+    url = url.strip()
+    if not url:
+        return ""
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    return "https://" + url
+
 def generate_for_country(country: str) -> List[str]:
     """Возвращает единый список доменов для выбранной страны."""
     rng = random.Random()
@@ -41,9 +47,12 @@ def generate_for_country(country: str) -> List[str]:
     all_domains = []
     for b in chosen_blocks:
         all_domains.extend(pick_domains(blocks[b], rng=rng))
+
+    all_domains = [normalize_url(domain) for domain in all_domains]
+
     return all_domains
 
-# --- Streamlit UI ---
+
 st.set_page_config(page_title="🎲 Генератор доменов", layout="centered")
 
 st.title("🎲 Генератор доменов по странам")
