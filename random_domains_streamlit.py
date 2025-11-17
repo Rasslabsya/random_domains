@@ -22,7 +22,6 @@ def list_weights_for_blocks(blocks: List[str]) -> List[int]:
 
 def choose_blocks(blocks: Dict[str, List[str]], *, rng: random.Random) -> List[str]:
     labels = list(blocks.keys())
-    weights = list_weights_for_blocks(labels)
     k = rng.randint(5, 7)
     return random.sample(labels, k=k)
 
@@ -40,7 +39,6 @@ def normalize_url(url: str) -> str:
     return "https://" + url
 
 def generate_for_country(country: str) -> List[str]:
-    """Возвращает единый список доменов для выбранной страны."""
     rng = random.Random()
     blocks = COUNTRIES[country]
     chosen_blocks = choose_blocks(blocks, rng=rng)
@@ -50,7 +48,12 @@ def generate_for_country(country: str) -> List[str]:
 
     all_domains = [normalize_url(domain) for domain in all_domains]
 
-    return all_domains
+    if len(all_domains) > 1:
+        quoted = [f"'{d}'," for d in all_domains[:-1]]
+        quoted.append(f"'{all_domains[-1]}'")
+        return quoted
+    else:
+        return all_domains
 
 
 st.set_page_config(page_title="🎲 Генератор доменов", layout="centered")
